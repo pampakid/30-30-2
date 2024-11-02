@@ -4,9 +4,15 @@ from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)  # This enables CORS for all routes
+    # Configure CORS specifically for your React app
+    CORS(app, resources={
+        r"/api/*": {
+            "origins": ["http://localhost:3000"],
+            "methods": ["GET", "POST", "PUT", "DELETE"],
+            "allow_headers": ["Content-Type"]
+        }
+    })
     
-    # Import and register the blueprint
     from app.routes.todos import todo_bp
     app.register_blueprint(todo_bp, url_prefix='/api')
     
