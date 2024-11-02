@@ -1,9 +1,14 @@
-# app/routes/todos.py
-from flask import Blueprint, jsonify, request 
+from flask import Blueprint, jsonify, request
 
+# Create blueprint
 todo_bp = Blueprint('todos', __name__)
 
-# In-memory storage (we'll replace with a database in future lessons)
+# Debug route
+@todo_bp.route('/debug', methods=['GET'])
+def debug_route():
+    return jsonify({"message": "Routes are working!"})
+
+# In-memory storage
 todos = []
 
 @todo_bp.route('/todos', methods=['GET'])
