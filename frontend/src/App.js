@@ -3,60 +3,70 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  // State for todos and new todo input
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState('');
+  // Add loading and error states for better debugging
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Fetch todos when component mounts
   useEffect(() => {
     fetchTodos();
   }, []);
 
-  // Function to fetch todos from backend
   const fetchTodos = async () => {
     try {
-      const response = await fetch('/api/todos');
+      setIsLoading(true);
+      const response = await fetch('http://localhost:5000/api/todos');
+      console.log('Fetch response:', response); // Debug log
       if (!response.ok) {
-        throw new Error('Failed to fetch todos');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
+      console.log('Fetched todos:', data); // Debug log
       setTodos(data);
     } catch (error) {
       console.error('Error fetching todos:', error);
-      // In a real app, we'd handle this error appropriately
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Function to add new todo
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/todos', {
+      setIsLoading(true);
+      console.log('Sending todo:', newTodo); // Debug log
+      const response = await fetch('http://localhost:5000/api/todos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ text: newTodo }),
       });
+      console.log('Post response:', response); // Debug log
       
       if (!response.ok) {
-        throw new Error('Failed to create todo');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const createdTodo = await response.json();
+      console.log('Created todo:', createdTodo); // Debug log
       setTodos([...todos, createdTodo]);
-      setNewTodo(''); // Clear input
+      setNewTodo('');
     } catch (error) {
       console.error('Error creating todo:', error);
-      // In a real app, we'd handle this error appropriately
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="App">
       <h1>Todo List</h1>
+      {error && <div style={{ color: 'red' }}>{error}</div>}
       
-      {/* Todo Creation Form */}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -65,10 +75,13 @@ function App() {
           placeholder="What needs to be done?"
           required
         />
-        <button type="submit">Add Todo</button>
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Adding...' : 'Add Todo'}
+        </button>
       </form>
 
-      {/* Todo List */}
+      {isLoading && <div>Loading...</div>}
+      
       <ul>
         {todos.map(todo => (
           <li key={todo.id}>
