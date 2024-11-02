@@ -1,42 +1,61 @@
-// src/App.js
+// frontend/src/App.js
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState('');
-  // Add loading and error states for better debugging
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [testMessage, setTestMessage] = useState('');
 
+  // Test both endpoints when component mounts
   useEffect(() => {
-    fetchTodos();
+    // Test main app route
+    fetch('http://localhost:5000/test')
+      .then(response => response.json())
+      .then(data => {
+        console.log('Main test response:', data);
+        setTestMessage(data.message);
+      })
+      .catch(error => {
+        console.error('Main test error:', error);
+      });
+
+    // Test blueprint route
+    fetch('http://localhost:5000/api/test')
+      .then(response => response.json())
+      .then(data => {
+        console.log('Blueprint test response:', data);
+        // If blueprint test works, fetch todos
+        fetchTodos();
+      })
+      .catch(error => {
+        console.error('Blueprint test error:', error);
+        setError('Failed to connect to API');
+      });
   }, []);
 
   const fetchTodos = async () => {
     try {
-      setIsLoading(true);
       const response = await fetch('http://localhost:5000/api/todos');
-      console.log('Fetch response:', response); // Debug log
+      console.log('Todos response:', response);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
       const data = await response.json();
-      console.log('Fetched todos:', data); // Debug log
+      console.log('Todos data:', data);
       setTodos(data);
     } catch (error) {
-      console.error('Error fetching todos:', error);
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+      console.error('Fetch todos error:', error);
+      setError('Failed to fetch todos');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      setIsLoading(true);
-      console.log('Sending todo:', newTodo); // Debug log
       const response = await fetch('http://localhost:5000/api/todos', {
         method: 'POST',
         headers: {
@@ -44,51 +63,60 @@ function App() {
         },
         body: JSON.stringify({ text: newTodo }),
       });
-      console.log('Post response:', response); // Debug log
-      
+
+      console.log('Create todo response:', response);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const createdTodo = await response.json();
-      console.log('Created todo:', createdTodo); // Debug log
-      setTodos([...todos, createdTodo]);
+
+      const data = await response.json();
+      console.log('Created todo:', data);
+      setTodos([...todos, data]);
       setNewTodo('');
+      setError(null);
     } catch (error) {
-      console.error('Error creating todo:', error);
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
+      console.error('Create todo error:', error);
+      setError('Failed to create todo');
     }
   };
 
   return (
     <div className="App">
       <h1>Todo List</h1>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      
+      {testMessage && (
+        <div style={{ margin: '1rem 0', padding: '0.5rem', backgroundColor: '#e3f2fd' }}>
+          {testMessage}
+        </div>
+      )}
+      
+      {error && (
+        <div style={{ color: 'red', margin: '1rem 0', padding: '0.5rem', backgroundColor: '#ffebee' }}>
+          {error}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit}>
         <input
           type="text"
           value={newTodo}
           onChange={(e) => setNewTodo(e.target.value)}
-          placeholder="What needs to be done?"
+          placeholder="Add a new todo"
           required
         />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Adding...' : 'Add Todo'}
-        </button>
+        <button type="submit">Add Todo</button>
       </form>
 
-      {isLoading && <div>Loading...</div>}
-      
       <ul>
         {todos.map(todo => (
-          <li key={todo.id}>
-            {todo.text}
-          </li>
+          <li key={todo.id}>{todo.text}</li>
         ))}
       </ul>
+
+      <div style={{ marginTop: '2rem', fontSize: '0.8rem', color: '#666' }}>
+        Status: {testMessage ? 'Connected to server' : 'Not connected'}
+      </div>
     </div>
   );
 }
