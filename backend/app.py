@@ -3,14 +3,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from models import db, Todo
 from config import Config
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
 db.init_app(app)
 
-@app.before_first_request
-def create_tables():
+# Create the database tables within the application context
+with app.app_context():
     db.create_all()
 
 @app.route('/api/todos', methods=['GET'])
@@ -21,9 +22,9 @@ def get_todos():
 @app.route('/api/todos', methods=['POST'])
 def create_todo():
     data = request.get_json()
-
+    
     if not data or 'text' not in data:
-        return jsonify({ 'error': 'Text is required.' }), 400
+        return jsonify({'error': 'Text is required'}), 400
     
     todo = Todo(
         text=data['text'],
@@ -31,19 +32,19 @@ def create_todo():
     )
     db.session.add(todo)
     db.session.commit()
-
+    
     return jsonify(todo.to_dict()), 201
 
 @app.route('/api/todos/<int:todo_id>', methods=['PUT'])
 def update_todo(todo_id):
     todo = Todo.query.get_or_404(todo_id)
     data = request.get_json()
-
-    if 'text' in data: 
+    
+    if 'text' in data:
         todo.text = data['text']
     if 'completed' in data:
         todo.completed = data['completed']
-
+    
     db.session.commit()
     return jsonify(todo.to_dict())
 
